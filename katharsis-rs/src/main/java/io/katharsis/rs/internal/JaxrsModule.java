@@ -75,18 +75,18 @@ public class JaxrsModule implements Module {
 				String path = normPath(pathAnnotation.value());
 				String[] pathElements = path.split("\\/");
 
-				checkPathElements(method, pathElements);
+				if (checkPathElements(method, pathElements)) {
+					RepositoryActionType actionType = pathElements[0].equals(ID_ACTION_PARAMETER) ? RepositoryActionType.RESOURCE
+							: RepositoryActionType.REPOSITORY;
 
-				RepositoryActionType actionType = pathElements[0].equals(ID_ACTION_PARAMETER) ? RepositoryActionType.RESOURCE
-						: RepositoryActionType.REPOSITORY;
-
-				String name = pathElements[pathElements.length - 1];
-				RepositoryAction action = new JaxrsRepositoryAction(name, actionType);
-				actions.put(name, action);
+					String name = pathElements[pathElements.length - 1];
+					RepositoryAction action = new JaxrsRepositoryAction(name, actionType);
+					actions.put(name, action);
+				}
 			}
-			else if (isJaxRs) {
-				throw new IllegalStateException("JAXRS actions must be annotated with @Path: " + method);
-			}
+			//else if (isJaxRs) {
+			//	throw new IllegalStateException("JAXRS actions must be annotated with @Path: " + method);
+			//}
 		}
 
 		/**
@@ -94,21 +94,21 @@ public class JaxrsModule implements Module {
 		 * @param method holding the @Path annotation
 		 * @param pathElements of this method
 		 */
-		private void checkPathElements(Method method, String[] pathElements) {
+		private boolean checkPathElements(Method method, String[] pathElements) {
 			if (pathElements.length == 0 || pathElements.length == 1 && pathElements[0].isEmpty()) {
-				throw new IllegalStateException("@Path value must not be empty: " + method);
+				return false;
 			}
 			if (pathElements.length > 2) {
-				throw new IllegalStateException("@Path value must not contain more than two elements: " + method);
+				return false;
 			}
 
 			if (pathElements.length == 1 && pathElements[0].equals(ID_ACTION_PARAMETER)) {
-				throw new IllegalStateException("single element in @Path cannot be {id}, add action name: " + method);
+				return false;
 			}
 			if (pathElements.length == 2 && !pathElements[0].equals(ID_ACTION_PARAMETER)) {
-				throw new IllegalStateException(
-						"for two elements in @Path the first one must be {id}, the second the action name: " + method);
+				return false;
 			}
+			return true;
 		}
 
 		private boolean isJaxRsMethod(Method method) {
